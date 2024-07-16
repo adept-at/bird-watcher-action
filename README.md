@@ -1,18 +1,17 @@
-# wait-for-workflow:
+# bird-watcher-action:
 
-To update and release: 
+To update and release:
 
 1. Create a new branch.
-2. Make edits to /index.ts, then once staged in a commit, husky will compile the /dist/index.js, then just push that commit, and merge to main, 
+2. Make edits to /index.ts, then once staged in a commit, husky will compile the /dist/index.js, then just push that commit, and merge to main,
 3. Do a release, Example:
 
-git tag -a v1.0.11 -m "change version to match package.json version"
-git push origin v1.0.11
+git tag -a v1.0.2 -m "change version to match package.json version"
+git push origin v1.0.2
 
 Go to the release tab in repo and publish by that tag ^.
 
 # Example usage in a workflow to dispatch and wait for results:
-
 
 ```
 name: Cypress E2E Preview Url Tests
@@ -34,7 +33,7 @@ jobs:
           scope: '@adept-at'
       # Dispatch and wait for the Cypress workflow to complete and report back the status
       - name: Wait for Workflow Completion
-        uses: adept-at/wait-for-workflow@v1.0.8
+        uses: adept-at/bird-watcher-action@v1.0.8
         with:
             GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
             REPOSITORY: adept-at/learn-webapp
@@ -44,8 +43,8 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 ```
-# Example usage in a workflow to just dispatch a remote_dispatch and not wait for results:
 
+# Example usage in a workflow to just dispatch a remote_dispatch and not wait for results:
 
 ```
 name: deployment-invite
@@ -58,7 +57,7 @@ jobs:
     if: ${{ github.event.deployment_status.state == 'success' && github.event.deployment_status.environment == 'Production' }}
     steps:
       - name: Dispatch invite learner test in production
-        uses: adept-at/wait-for-workflow@v1.0.9
+        uses: adept-at/bird-watcher-action@v1.0.9
         with:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           REPOSITORY:  adept-at/lib-wdio-8-multi-remote
