@@ -1,6 +1,13 @@
 import * as core from '@actions/core';
 import { Octokit } from '@octokit/rest';
 
+interface WorkflowRunInfo {
+  name: string;
+  status: string | null;
+  conclusion: string | null;
+  lastRunTime: Date;
+}
+
 async function run(): Promise<void> {
   try {
     const token: string = core.getInput('token');
@@ -16,6 +23,8 @@ async function run(): Promise<void> {
 
     console.log(`Most recent workflow runs for ${owner}/${repo}:`);
 
+    const workflowInfos: WorkflowRunInfo[] = [];
+
     for (const workflow of workflows.workflows) {
       const { data: runs } = await octokit.actions.listWorkflowRuns({
         owner,
@@ -26,12 +35,23 @@ async function run(): Promise<void> {
 
       if (runs.total_count > 0) {
         const latestRun = runs.workflow_runs[0];
-        const runTime = new Date(latestRun.created_at).toLocaleString('en-US', { timeZone: 'UTC' });
-        console.log(`${workflow.name} - Status: ${latestRun.status}, Conclusion: ${latestRun.conclusion}, Last Run: ${runTime} UTC`);
-      } else {
-        console.log(`${workflow.name} - No runs`);
+        workflowInfos.push({
+          name: workflow.name,
+          status: latestRun.status,
+          conclusion: latestRun.conclusion,
+          lastRunTime: new Date(latestRun.created_at)
+        });
       }
     }
+
+    // Sort workflows by last run time, most recent first
+    workflowInfos.sort((a, b) => b.lastRunTime.getTime() - a.lastRunTime.getTime());
+
+    // Output sorted workflow information
+    workflowInfos.forEach(info => {
+      const runTime = info.lastRunTime.toLocaleString('en-US', { timeZone: 'UTC' });
+      console.log(`${info.name} - Status: ${info.status}, Conclusion: ${info.conclusion}, Last Run: ${runTime} UTC`);
+    });
 
     // You can add more detailed processing or notifications here
 
