@@ -1,6 +1,6 @@
 {
   "name": "bird-watcher-action",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Get a status summary of all github actions in the repo",
   "main": "index.ts",
   "scripts": {
