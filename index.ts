@@ -12,13 +12,24 @@ async function run(): Promise<void> {
     const { data: workflowRuns } = await octokit.actions.listWorkflowRunsForRepo({
       owner,
       repo,
+      per_page: 100, // Increase this if you have more workflows
     });
 
-    console.log(`Recent workflow runs for ${owner}/${repo}:`);
+    console.log(`Most recent workflow runs for ${owner}/${repo}:`);
+
+    // Group workflows by name and get the most recent run
+    const latestRuns = new Map<string, typeof workflowRuns.workflow_runs[0]>();
     workflowRuns.workflow_runs.forEach(run => {
-      console.log(`${run.name} - Status: ${run.status}, Conclusion: ${run.conclusion}`);
+      if (!latestRuns.has(run.name) || run.created_at > latestRuns.get(run.name)!.created_at) {
+        latestRuns.set(run.name, run);
+      }
     });
-    // add slack notification here
+
+    // Output the latest run for each workflow
+    latestRuns.forEach((run, workflowName) => {
+      console.log(`${workflowName} - Status: ${run.status}, Conclusion: ${run.conclusion}`);
+    });
+
     // You can add more detailed processing or notifications here
 
   } catch (error) {
