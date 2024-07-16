@@ -28825,7 +28825,8 @@ function run() {
                 });
                 if (runs.total_count > 0) {
                     const latestRun = runs.workflow_runs[0];
-                    console.log(`${workflow.name} - Status: ${latestRun.status}, Conclusion: ${latestRun.conclusion}`);
+                    const runTime = new Date(latestRun.created_at).toLocaleString('en-US', { timeZone: 'UTC' });
+                    console.log(`${workflow.name} - Status: ${latestRun.status}, Conclusion: ${latestRun.conclusion}, Last Run: ${runTime} UTC`);
                 }
                 else {
                     console.log(`${workflow.name} - No runs`);
