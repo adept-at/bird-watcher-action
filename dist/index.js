@@ -28811,15 +28811,26 @@ function run() {
             const owner = core.getInput('owner');
             const repo = core.getInput('repo');
             const octokit = new rest_1.Octokit({ auth: token });
-            const { data: workflowRuns } = yield octokit.actions.listWorkflowRunsForRepo({
+            const { data: workflows } = yield octokit.actions.listRepoWorkflows({
                 owner,
                 repo,
             });
-            console.log(`Recent workflow runs for ${owner}/${repo}:`);
-            workflowRuns.workflow_runs.forEach(run => {
-                console.log(`${run.name} - Status: ${run.status}, Conclusion: ${run.conclusion}`);
-            });
-            // add slack notification here
+            console.log(`Most recent workflow runs for ${owner}/${repo}:`);
+            for (const workflow of workflows.workflows) {
+                const { data: runs } = yield octokit.actions.listWorkflowRuns({
+                    owner,
+                    repo,
+                    workflow_id: workflow.id,
+                    per_page: 1,
+                });
+                if (runs.total_count > 0) {
+                    const latestRun = runs.workflow_runs[0];
+                    console.log(`${workflow.name} - Status: ${latestRun.status}, Conclusion: ${latestRun.conclusion}`);
+                }
+                else {
+                    console.log(`${workflow.name} - No runs`);
+                }
+            }
             // You can add more detailed processing or notifications here
         }
         catch (error) {

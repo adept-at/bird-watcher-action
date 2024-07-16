@@ -9,26 +9,28 @@ async function run(): Promise<void> {
     
     const octokit = new Octokit({ auth: token });
 
-    const { data: workflowRuns } = await octokit.actions.listWorkflowRunsForRepo({
+    const { data: workflows } = await octokit.actions.listRepoWorkflows({
       owner,
       repo,
-      per_page: 100, // Increase this if you have more workflows
     });
 
     console.log(`Most recent workflow runs for ${owner}/${repo}:`);
 
-    // Group workflows by name and get the most recent run
-    const latestRuns = new Map<string, typeof workflowRuns.workflow_runs[0]>();
-    workflowRuns.workflow_runs.forEach(run => {
-      if (!latestRuns.has(run.name) || run.created_at > latestRuns.get(run.name)!.created_at) {
-        latestRuns.set(run.name, run);
-      }
-    });
+    for (const workflow of workflows.workflows) {
+      const { data: runs } = await octokit.actions.listWorkflowRuns({
+        owner,
+        repo,
+        workflow_id: workflow.id,
+        per_page: 1,
+      });
 
-    // Output the latest run for each workflow
-    latestRuns.forEach((run, workflowName) => {
-      console.log(`${workflowName} - Status: ${run.status}, Conclusion: ${run.conclusion}`);
-    });
+      if (runs.total_count > 0) {
+        const latestRun = runs.workflow_runs[0];
+        console.log(`${workflow.name} - Status: ${latestRun.status}, Conclusion: ${latestRun.conclusion}`);
+      } else {
+        console.log(`${workflow.name} - No runs`);
+      }
+    }
 
     // You can add more detailed processing or notifications here
 
