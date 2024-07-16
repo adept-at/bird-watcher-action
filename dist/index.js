@@ -28802,138 +28802,37 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const rest_1 = __nccwpck_require__(5375);
 const core = __importStar(__nccwpck_require__(2186));
-function dispatchWorkflowEvent(octokit, owner, repo, eventType, clientPayload) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const payload = clientPayload ? JSON.parse(clientPayload) : {};
-            yield octokit.rest.repos.createDispatchEvent({
-                owner,
-                repo,
-                event_type: eventType,
-                client_payload: payload
-            });
-            core.info(`Dispatched event '${eventType}' successfully.`);
-        }
-        catch (error) {
-            if (error instanceof Error) {
-                core.error(`Error dispatching event: ${error.message}`);
-            }
-            else {
-                core.error('Unknown error occurred while dispatching event');
-            }
-            throw error;
-        }
-    });
-}
-function checkWorkflowStatus(octokit, owner, repo, workflowName, current_time, thirtySecsLater) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const response = yield octokit.actions.listWorkflowRunsForRepo({
-                owner,
-                repo,
-                event: 'repository_dispatch'
-            });
-            if (!response.data.workflow_runs) {
-                core.error('No workflow runs found');
-                return { status: null, conclusion: null };
-            }
-            const workflowRuns = response.data.workflow_runs.filter((run) => new Date(run.created_at) > new Date(current_time) &&
-                new Date(run.created_at) < new Date(thirtySecsLater) &&
-                run.display_title === workflowName);
-            if (workflowRuns.length > 0) {
-                const status = workflowRuns[0].status;
-                const conclusion = workflowRuns[0].conclusion;
-                const url = workflowRuns[0].html_url;
-                core.info(`Status of the matching run: ${status} at (${url})`);
-                return { status, conclusion };
-            }
-            else {
-                core.info('No matching workflow runs found');
-                return { status: null, conclusion: null };
-            }
-        }
-        catch (error) {
-            if (error instanceof Error) {
-                core.error('Error fetching workflow runs: ' + error.message);
-            }
-            else {
-                core.error('An unknown error occurred');
-            }
-            throw error;
-        }
-    });
-}
-function waitForWorkflowCompletion(octokit, owner, repo, workflowName) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const MAX_ATTEMPTS = 16;
-        let attempt = 0;
-        const current_time = new Date();
-        core.info('Current Time: ' + current_time.toISOString());
-        const thirtySecsLater = new Date(current_time.getTime() + 30000);
-        let res = { status: null, conclusion: null };
-        while (attempt < MAX_ATTEMPTS) {
-            res = yield checkWorkflowStatus(octokit, owner, repo, workflowName, current_time, thirtySecsLater);
-            if (res && res.status === 'completed') {
-                if (res.conclusion === 'success') {
-                    core.info('Workflow completed successfully!');
-                    break;
-                }
-                else if (res.conclusion === 'failure') {
-                    core.error('Workflow failed...');
-                    process.exit(1);
-                }
-            }
-            else if (res.status) {
-                core.info('Workflow status is ' + res.status + '. Waiting for completion...');
-            }
-            else {
-                core.info('Workflow status is unknown. Waiting for completion...');
-            }
-            attempt++;
-            core.info('Attempt: ' + attempt);
-            yield new Promise((resolve) => setTimeout(resolve, 30000)); // 30 seconds
-        }
-        if (attempt === MAX_ATTEMPTS) {
-            core.error('Max attempts reached without completion. Exiting.');
-            process.exit(1);
-        }
-    });
-}
+const rest_1 = __nccwpck_require__(5375);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const githubToken = core.getInput('GITHUB_TOKEN');
-        const repository = core.getInput('REPOSITORY');
-        const workflowName = core.getInput('WORKFLOW_NAME');
-        const clientPayload = core.getInput('CLIENT_PAYLOAD', { required: false });
-        const verifyJobInput = core.getInput('VERIFY_JOB');
-        const verifyJob = verifyJobInput.toLowerCase() === 'true';
-        // Create a new Octokit instance
-        const octokit = new rest_1.Octokit({
-            auth: githubToken,
-            userAgent: 'GitHub Action',
-        });
-        const [owner, repo] = repository.split('/');
-        // Dispatch the workflow event
-        yield dispatchWorkflowEvent(octokit, owner, repo, workflowName, clientPayload);
-        // Only wait for workflow completion if VERIFY_JOB is true
-        if (verifyJob) {
-            yield waitForWorkflowCompletion(octokit, owner, repo, workflowName);
+        try {
+            const token = core.getInput('token');
+            const owner = core.getInput('owner');
+            const repo = core.getInput('repo');
+            const octokit = new rest_1.Octokit({ auth: token });
+            const { data: workflowRuns } = yield octokit.actions.listWorkflowRunsForRepo({
+                owner,
+                repo,
+            });
+            console.log(`Recent workflow runs for ${owner}/${repo}:`);
+            workflowRuns.workflow_runs.forEach(run => {
+                console.log(`${run.name} - Status: ${run.status}, Conclusion: ${run.conclusion}`);
+            });
+            // add slack notification here
+            // You can add more detailed processing or notifications here
         }
-        else {
-            core.info(`VERIFY_JOB is not enabled. ${workflowName} was dispatched from ${repo}.`);
+        catch (error) {
+            if (error instanceof Error) {
+                core.setFailed(error.message);
+            }
+            else {
+                core.setFailed('An unexpected error occurred');
+            }
         }
     });
 }
-run().catch((error) => {
-    if (error instanceof Error) {
-        core.setFailed('Action failed with error: ' + error.message);
-    }
-    else {
-        core.setFailed('Action failed due to an unknown error');
-    }
-});
+run();
 
 
 /***/ }),

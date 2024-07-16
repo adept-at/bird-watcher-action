@@ -1,7 +1,7 @@
 {
-  "name": "wait-for-workflow",
-  "version": "1.0.11",
-  "description": "wait for a workflow dispatch result",
+  "name": "bird-watcher-action",
+  "version": "1.0.1",
+  "description": "Get a status summary of all github actions in the repo",
   "main": "index.ts",
   "scripts": {
     "compile": "ncc build index.ts -o dist"
